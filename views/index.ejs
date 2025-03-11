@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joueurs ayant participé à des tournois</title>
+    <link rel="stylesheet" type="text/css" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Joueurs ayant participé à des tournois</h1>
+        <div class="separator"></div>
+
+        <div class="filter-container">
+            <select id="filter-club" class="filter-dropdown">
+                <option value="club" disabled selected>Club</option>
+            </select>
+            <select id="filter-tournoi" class="filter-dropdown">
+                <option value="tournoi" disabled selected>Tournoi</option>
+            </select>
+
+            <div class="filter-container">
+                <div class="filter-dropdown filter-ranking" id="filter-ranking">
+                    <span>Classement</span>
+                    <div class="filter-popup">
+                        <label for="min-ranking">Min</label>
+                        <label for="max-ranking">Max</label>
+                        <input type="number" min="500" id="min-ranking" class="filter-input" placeholder="Min" />
+                        <input type="number" min="500" id="max-ranking" class="filter-input" placeholder="Max" />
+                    </div>
+                </div>
+            </div>
+
+            <select id="filter-committee" class="filter-dropdown">
+                <option value="comite" disabled selected>Comité</option>
+                <% committees.forEach(function(comite) { %>
+                    <option value="<%= comite %>"><%= comite %></option>
+                <% }) %>
+            </select>
+
+            <button class="export-button" onclick="exportCSV()">Exporter</button>
+        </div>
+        <div id="tags-container" class="tags-container"></div>
+
+        <table id="players-table">
+            <thead>
+                <tr>
+                    <th>Licence</th>
+                    <th>Prénom</th>
+                    <th>Nom</th>
+                    <th>Classement</th>
+                    <th>Club</th>
+                    <th>Tournoi</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- <% allData.forEach(function(player) { %>
+                    <tr>
+                        <td><%= player.PlayerID %></td>
+                        <td><%= player.FirstName %></td>
+                        <td><%= player.LastName %></td>
+                        <td><%= player.Rank %></td>
+                        <td><%= player.ClubName %></td>
+                        <td><%= player.TournamentName %></td>
+                        <td><%= player.TournamentDate %></td>
+                    </tr>
+                <% }) %> -->
+            </tbody>
+        </table>
+        <div class="truncate-message" id="truncate-message"></div>
+    </div>
+
+    <script>
+    let allData = []; // Initialize allData as an empty array
+    let selectedClubs = [];
+    let selectedTournois = [];
+    let selectedCommittees = [];
+
+    // Function to load player data from the API
+    async function loadPlayers() {
+        const response = await fetch('/api/participation');
+        const data = await response.json();
+        allData = data.allData.map(player => [
+            player.PlayerID,
+            player.FirstName,
+            player.LastName,
+            player.Rank,
+            player.ClubName,
+            player.TournamentName,
+            player.TournamentDate,
+            player.Committee,
+            player.Sex
+        ]);
+        populateClubFilter(4);
+        populateTournoiFilter(5);
+        populateCommitteeFilter();
+        populateRankingFilter(allData);
+        populateTable(allData);
+    }
+
+    // Dynamically generate options for the Club filter
+    function populateClubFilter(column) {
+        const clubs = [...new Set(allData.map(row => row[column]).filter(Boolean))];
+        clubs.sort();
+
+        const filterClub = document.getElementById('filter-club');
+        filterClub.innerHTML = '<option value="club" disabled selected>Club</option>'; // Clear existing options
+        clubs.forEach(club => {
+            const option = document.createElement('option');
+            option.value = club;
+            option.textContent = club;
+            filterClub.appendChild(option);
+        });
+
+        filterClub.addEventListener('change', () => {
+            const selectedValue = filterClub.value;
+            if (!selectedClubs.includes(selectedValue)) {
+                selectedClubs.push(selectedValue);
+                updateFilterStyle();
+                filterTable(4);
+                displayTags();
+            }
+        });
+    }
+
+    // Dynamically generate options for the Tournament filter
+    function populateTournoiFilter(column) {
+        const tournois = [...new Set(allData.map(row => row[column]?.trim()).filter(Boolean))];
+        tournois.sort();
+
+        const filterTournoi = document.getElementById('filter-tournoi');
+        filterTournoi.innerHTML = '<option value="tournoi" disabled selected>Tournoi</option>'; // Clear existing options
+        tournois.forEach(tournoi => {
+            const option = document.createElement('option');
+            option.value = tournoi;
+            option.textContent = tournoi;
+            filterTournoi.appendChild(option);
+        });
+
+        filterTournoi.addEventListener('change', () => {
+            const selectedValue = filterTournoi.value;
+            if (!selectedTournois.includes(selectedValue)) {
+                selectedTournois.push(selectedValue);
+                updateFilterStyle();
+                filterTable(5);
+                displayTags();
+            }
+        });
+    }
+
+    function populateCommitteeFilter() {
+        const committees = [...new Set(allData.map(row => row[7]))];
+        committees.sort();
+
+        const filterCommittee = document.getElementById('filter-committee');
+        filterCommittee.innerHTML = '<option value="comite" disabled selected>Comité</option>'; // Clear existing options
+        committees.forEach(comite => {
+            const option = document.createElement('option');
+            option.value = comite;
+            option.textContent = comite;
+            filterCommittee.appendChild(option);
+        });
+
+        filterCommittee.addEventListener('change', () => {
+            const selectedValue = filterCommittee.value;
+            if (!selectedCommittees.includes(selectedValue)) {
+                selectedCommittees.push(selectedValue);
+                updateFilterStyle();
+                filterTable();
+                displayTags();
+            }
+        });
+    }
+
+    function updateFilterStyle() {
+        var filterElement = document.getElementById('filter-club');
+        if (selectedClubs.length > 0) {
+            filterElement.classList.add('choices--highlight-green');
+        } else {
+            filterElement.classList.remove('choices--highlight-green');
+        }
+        filterElement.value = 'club';
+
+        filterElement = document.getElementById('filter-tournoi');
+        if (selectedTournois.length > 0) {
+            filterElement.classList.add('choices--highlight-green');
+        } else {
+            filterElement.classList.remove('choices--highlight-green');
+        }
+        filterElement.value = 'tournoi';
+
+        filterElement = document.getElementById('filter-committee');
+        if (selectedCommittees.length > 0) {
+            filterElement.classList.add('choices--highlight-green');
+        } else {
+            filterElement.classList.remove('choices--highlight-green');
+        }
+        filterElement.value = 'comite';
+
+        filterElement = document.getElementById('filter-ranking');
+        if (document.getElementById('min-ranking').value || document.getElementById('max-ranking').value) {
+            filterElement.classList.add('choices--highlight-green');
+        } else {
+            filterElement.classList.remove('choices--highlight-green');
+        }
+    }
+
+    function displayTags() {
+        const tagsContainer = document.getElementById('tags-container');
+        tagsContainer.innerHTML = '';
+
+        selectedClubs.forEach(club => {
+            const tag = document.createElement('div');
+            tag.textContent = club;
+            tag.className = 'tag';
+
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = '⨉';
+            removeBtn.className = 'remove-btn';
+            removeBtn.onclick = () => removeClub(club);
+
+            tag.appendChild(removeBtn);
+            tagsContainer.appendChild(tag);
+        });
+        selectedTournois.forEach(tournoi => {
+            const tag = document.createElement('div');
+            tag.textContent = tournoi;
+            tag.className = 'tag';
+
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = '⨉';
+            removeBtn.className = 'remove-btn';
+            removeBtn.onclick = () => removeTournoi(tournoi);
+
+            tag.appendChild(removeBtn);
+            tagsContainer.appendChild(tag);
+        });
+
+        if (document.getElementById('min-ranking').value || document.getElementById('max-ranking').value) {
+            const minRankingInput = document.getElementById('min-ranking');
+            const minValue = minRankingInput.value ? minRankingInput.value : minRankingInput.placeholder;
+
+            const maxRankingInput = document.getElementById('max-ranking');
+            const maxValue = maxRankingInput.value ? maxRankingInput.value : maxRankingInput.placeholder;
+
+            const tag = document.createElement('div');
+            tag.textContent = minValue + ' - ' + maxValue;
+            tag.className = 'tag';
+
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = '⨉';
+            removeBtn.className = 'remove-btn';
+            removeBtn.onclick = () => removeRanking();
+
+            tag.appendChild(removeBtn);
+            tagsContainer.appendChild(tag);
+        }
+        selectedCommittees.forEach(comite => {
+            const tag = document.createElement('div');
+            tag.textContent = comite;
+            tag.className = 'tag';
+
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = '⨉';
+            removeBtn.className = 'remove-btn';
+            removeBtn.onclick = () => removeCommittee(comite);
+
+            tag.appendChild(removeBtn);
+            tagsContainer.appendChild(tag);
+        });
+    }
+
+    function populateRankingFilter(data) {
+        if (!document.getElementById('min-ranking').value) {
+            document.getElementById('min-ranking').placeholder = Math.min(...data.map(row => parseInt(row[3])));
+        }
+        if (!document.getElementById('max-ranking').value) {
+            document.getElementById('max-ranking').placeholder = Math.max(...data.map(row => parseInt(row[3])));
+        }
+    }
+
+    function removeClub(club) {
+        selectedClubs = selectedClubs.filter(selected => selected !== club);
+        updateFilterStyle();
+        filterTable();
+        displayTags();
+    }
+
+    function removeTournoi(tournoi) {
+        selectedTournois = selectedTournois.filter(selected => selected !== tournoi);
+        updateFilterStyle();
+        filterTable();
+        displayTags();
+    }
+
+    function removeRanking() {
+        document.getElementById('min-ranking').value = null;
+        document.getElementById('max-ranking').value = null;
+        updateFilterStyle();
+        filterTable();
+        displayTags();
+    }
+
+    function removeCommittee(comite) {
+        selectedCommittees = selectedCommittees.filter(selected => selected !== comite);
+        updateFilterStyle();
+        filterTable();
+        displayTags();
+    }
+
+    function filterTable() {
+        let filteredData = allData;
+
+        if (selectedClubs.length > 0) {
+            filteredData = filteredData.filter(row => selectedClubs.includes(row[4]));
+        }
+
+        if (selectedTournois.length > 0) {
+            filteredData = filteredData.filter(row => selectedTournois.includes(row[5]?.trim()));
+        }
+
+        if (selectedCommittees.length > 0) {
+            filteredData = filteredData.filter(row => selectedCommittees.includes(String(row[7])));
+        }
+
+        const minRanking = parseInt(document.getElementById('min-ranking').value) || Math.min(...filteredData.map(row => parseInt(row[3])));
+        const maxRanking = parseInt(document.getElementById('max-ranking').value) || Math.max(...filteredData.map(row => parseInt(row[3])));
+
+        filteredData = filteredData.filter(row => {
+            const ranking = parseInt(row[3]);
+            return ranking >= minRanking && ranking <= maxRanking;
+        });
+
+        populateRankingFilter(filteredData);
+        populateTable(filteredData);
+    }
+
+    function populateTable(data) {
+        const tbody = document.getElementById('players-table').querySelector('tbody');
+        tbody.innerHTML = '';
+        
+        const maxRows = 500;
+        const truncated = data.length > maxRows;
+        const displayData = truncated ? data.slice(0, maxRows) : data;
+
+        displayData.forEach(row => {
+            if (Array.isArray(row)) {
+                const tr = document.createElement('tr');
+                row.forEach((col, index) => {
+                    if (index < 7) { // Don't add columns committee and sex
+                        const td = document.createElement('td');
+                        td.textContent = col;
+                        tr.appendChild(td);
+                    }
+                });
+                tbody.appendChild(tr);
+            }
+        });
+
+        if (truncated) {
+            document.getElementById('truncate-message').textContent = "Pour des raisons de performance, seules les 500 premières lignes sont affichées. Utilisez les filtres ou l'option d'exportation.";    
+        } else {
+            document.getElementById('truncate-message').textContent = "";
+        }
+    }
+
+    function exportCSV() {
+        let table = document.getElementById("players-table");
+        let rows = table.querySelectorAll("tr");
+        let csvContent = "data:text/csv;charset=utf-8,";
+
+        rows.forEach(row => {
+            let cols = row.querySelectorAll("th, td");
+            let rowData = [];
+
+            cols.forEach(col => rowData.push(col.textContent));
+            csvContent += rowData.join(",") + "\n";
+        });
+
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "players.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    const filterRanking = document.getElementById('filter-ranking');
+    const filterPopup = document.querySelector('.filter-popup');
+
+    function isClickInsideElement(event, element) {
+        return element.contains(event.target);
+    }
+
+    filterRanking.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!filterRanking.classList.contains('active')) {
+            filterRanking.classList.add('active');
+        } else {
+            if (!isClickInsideElement(event, filterPopup)) {
+                filterRanking.classList.remove('active');
+            }
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!isClickInsideElement(event, filterPopup)) {
+            filterRanking.classList.remove('active');
+        }
+    });
+
+    document.getElementById('min-ranking').addEventListener('input', () => {
+        filterTable();
+        updateFilterStyle();
+        displayTags();
+    });
+
+    document.getElementById('max-ranking').addEventListener('input', () => {
+        filterTable();
+        updateFilterStyle();
+        displayTags();
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadPlayers();
+    });
+</script>
+
+</body>
+</html>
