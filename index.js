@@ -35,12 +35,19 @@ app.set('views', path.join(__dirname, 'views'));
 app.use('/api/participation', participationRoutes);
 
 
+
+const protocol = process.env.ENV === 'prod'
+? req.protocol
+: 'http';
+const host = process.env.ENV === 'prod'
+? req.get('host')
+: 'localhost:3000';
+
+
 app.get('/', async (req, res) => {
   try {
-    const protocol = req.protocol;
-    const host = req.get('host');
     const url = `${protocol}://${host}/api/participation`;
-
+    
     const response = await fetch(url);
 
     // Vérifiez que la réponse est OK (statut 200)
@@ -63,5 +70,5 @@ app.get('/', async (req, res) => {
 
 
 app.listen(PORT, () => {
-  console.log(`Server started on ${protocol}://${host}:${PORT}`);
+  console.log(`Server started on ${protocol}://${host}`);
 });

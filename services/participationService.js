@@ -15,6 +15,7 @@ async function getParticipationData() {
           ...participation,
           TournamentName: tournament.TournamentName,
           TournamentDate: tournament.TournamentDate,
+          TournamentLevel: tournament.TournamentLevel,
         });
       });
     }

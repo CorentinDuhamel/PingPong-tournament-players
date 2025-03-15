@@ -38,6 +38,9 @@
                 <% }) %>
             </select>
 
+            <select id="filter-gender" class="filter-dropdown"></select>
+            <select id="filter-level" class="filter-dropdown"></select>
+
             <button class="export-button" onclick="exportCSV()">Exporter</button>
         </div>
         <div id="tags-container" class="tags-container"></div>
@@ -55,17 +58,6 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- <% allData.forEach(function(player) { %>
-                    <tr>
-                        <td><%= player.PlayerID %></td>
-                        <td><%= player.FirstName %></td>
-                        <td><%= player.LastName %></td>
-                        <td><%= player.Rank %></td>
-                        <td><%= player.ClubName %></td>
-                        <td><%= player.TournamentName %></td>
-                        <td><%= player.TournamentDate %></td>
-                    </tr>
-                <% }) %> -->
             </tbody>
         </table>
         <div class="truncate-message" id="truncate-message"></div>
@@ -76,6 +68,8 @@
     let selectedClubs = [];
     let selectedTournois = [];
     let selectedCommittees = [];
+    let selectedGenders = [];
+    let selectedLevels = [];
 
     // Function to load player data from the API
     async function loadPlayers() {
@@ -90,11 +84,14 @@
             player.TournamentName,
             player.TournamentDate,
             player.Committee,
-            player.Sex
+            player.Gender,
+            player.TournamentLevel,
         ]);
         populateClubFilter(4);
         populateTournoiFilter(5);
         populateCommitteeFilter();
+        populateGenderFilter();
+        populateLevelFilter();
         populateRankingFilter(allData);
         populateTable(allData);
     }
@@ -173,6 +170,54 @@
         });
     }
 
+    function populateGenderFilter() {
+        const genders = [...new Set(allData.map(row => row[8]))];
+        genders.sort();
+
+        const filterGender = document.getElementById('filter-gender');
+        filterGender.innerHTML = '<option value="gender" disabled selected>Genre</option>'; // Clear existing options
+        genders.forEach(gender => {
+            const option = document.createElement('option');
+            option.value = gender;
+            option.textContent = gender;
+            filterGender.appendChild(option);
+        });
+
+        filterGender.addEventListener('change', () => {
+            const selectedValue = filterGender.value;
+            if (!selectedGenders.includes(selectedValue)) {
+                selectedGenders.push(selectedValue);
+                updateFilterStyle();
+                filterTable();
+                displayTags();
+            }
+        });
+    }
+
+    function populateLevelFilter() {
+        const levels = [...new Set(allData.map(row => row[9]))];
+        levels.sort();
+
+        const filterLevel = document.getElementById('filter-level');
+        filterLevel.innerHTML = '<option value="level" disabled selected>Niveau</option>'; // Clear existing options
+        levels.forEach(level => {
+            const option = document.createElement('option');
+            option.value = level;
+            option.textContent = level;
+            filterLevel.appendChild(option);
+        });
+
+        filterLevel.addEventListener('change', () => {
+            const selectedValue = filterLevel.value;
+            if (!selectedLevels.includes(selectedValue)) {
+                selectedLevels.push(selectedValue);
+                updateFilterStyle();
+                filterTable();
+                displayTags();
+            }
+        });
+    }
+
     function updateFilterStyle() {
         var filterElement = document.getElementById('filter-club');
         if (selectedClubs.length > 0) {
@@ -197,6 +242,22 @@
             filterElement.classList.remove('choices--highlight-green');
         }
         filterElement.value = 'comite';
+
+        filterElement = document.getElementById('filter-gender');
+        if (selectedGenders.length > 0) {
+            filterElement.classList.add('choices--highlight-green');
+        } else {
+            filterElement.classList.remove('choices--highlight-green');
+        }
+        filterElement.value = 'gender';
+
+        filterElement = document.getElementById('filter-level');
+        if (selectedLevels.length > 0) {
+            filterElement.classList.add('choices--highlight-green');
+        } else {
+            filterElement.classList.remove('choices--highlight-green');
+        }
+        filterElement.value = 'level';
 
         filterElement = document.getElementById('filter-ranking');
         if (document.getElementById('min-ranking').value || document.getElementById('max-ranking').value) {
@@ -269,6 +330,32 @@
             tag.appendChild(removeBtn);
             tagsContainer.appendChild(tag);
         });
+        selectedGenders.forEach(gender => {
+            const tag = document.createElement('div');
+            tag.textContent = gender;
+            tag.className = 'tag';
+
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = '⨉';
+            removeBtn.className = 'remove-btn';
+            removeBtn.onclick = () => removeGender(gender);
+
+            tag.appendChild(removeBtn);
+            tagsContainer.appendChild(tag);
+        });
+        selectedLevels.forEach(level => {
+            const tag = document.createElement('div');
+            tag.textContent = level;
+            tag.className = 'tag';
+
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = '⨉';
+            removeBtn.className = 'remove-btn';
+            removeBtn.onclick = () => removeLevel(level);
+
+            tag.appendChild(removeBtn);
+            tagsContainer.appendChild(tag);
+        });
     }
 
     function populateRankingFilter(data) {
@@ -309,6 +396,20 @@
         displayTags();
     }
 
+    function removeGender(gender) {
+        selectedGenders = selectedGenders.filter(selected => selected !== gender);
+        updateFilterStyle();
+        filterTable();
+        displayTags();
+    }
+
+    function removeLevel(level) {
+        selectedLevels = selectedLevels.filter(selected => selected !== level);
+        updateFilterStyle();
+        filterTable();
+        displayTags();
+    }
+
     function filterTable() {
         let filteredData = allData;
 
@@ -322,6 +423,14 @@
 
         if (selectedCommittees.length > 0) {
             filteredData = filteredData.filter(row => selectedCommittees.includes(String(row[7])));
+        }
+
+        if (selectedGenders.length > 0) {
+            filteredData = filteredData.filter(row => selectedGenders.includes(String(row[8])));
+        }
+
+        if (selectedLevels.length > 0) {
+            filteredData = filteredData.filter(row => selectedLevels.includes(String(row[9])));
         }
 
         const minRanking = parseInt(document.getElementById('min-ranking').value) || Math.min(...filteredData.map(row => parseInt(row[3])));
