@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { initializeApp, cert } = require('firebase-admin/app');
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 require('dotenv').config();
 
@@ -22,9 +22,12 @@ const serviceAccount = {
   client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL
 };
 
-initializeApp({
-  credential: cert(serviceAccount),
-});
+// Check if Firebase app is already initialized
+if (getApps().length === 0) {
+  initializeApp({
+    credential: cert(serviceAccount),
+  });
+}
 
 const participationRoutes = require('./routes/participation');
 
@@ -34,20 +37,12 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use('/api/participation', participationRoutes);
 
-
-
-const protocol = process.env.ENV === 'prod'
-? req.protocol
-: 'http';
-const host = process.env.ENV === 'prod'
-? req.get('host')
-: 'localhost:3000';
-
-
 app.get('/', async (req, res) => {
   try {
+    const protocol = process.env.ENV === 'prod' ? req.protocol : 'http';
+    const host = process.env.ENV === 'prod' ? req.get('host') : 'localhost:3000';
     const url = `${protocol}://${host}/api/participation`;
-    
+
     const response = await fetch(url);
 
     // Vérifiez que la réponse est OK (statut 200)
@@ -68,7 +63,8 @@ app.get('/', async (req, res) => {
   }
 });
 
-
 app.listen(PORT, () => {
+  const protocol = process.env.ENV === 'prod' ? 'https' : 'http';
+  const host = process.env.ENV === 'prod' ? 'pingpong-tournament-players.vercel.app' : 'localhost:3000';
   console.log(`Server started on ${protocol}://${host}`);
 });

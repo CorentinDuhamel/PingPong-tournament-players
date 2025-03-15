@@ -38,8 +38,13 @@
                 <% }) %>
             </select>
 
-            <select id="filter-gender" class="filter-dropdown"></select>
-            <select id="filter-level" class="filter-dropdown"></select>
+            <select id="filter-gender" class="filter-dropdown">
+                <option value="gender" disabled selected>Genre</option>
+            </select>
+
+            <select id="filter-level" class="filter-dropdown">
+                <option value="level" disabled selected>Niveau</option>
+            </select>
 
             <button class="export-button" onclick="exportCSV()">Exporter</button>
         </div>
