@@ -92,18 +92,18 @@
             player.Gender,
             player.TournamentLevel,
         ]);
-        populateClubFilter(4);
-        populateTournoiFilter(5);
-        populateCommitteeFilter();
-        populateGenderFilter();
-        populateLevelFilter();
+        populateClubFilter(allData, 4);
+        populateTournoiFilter(allData, 5);
+        populateCommitteeFilter(allData);
+        populateGenderFilter(allData);
+        populateLevelFilter(allData);
         populateRankingFilter(allData);
         populateTable(allData);
     }
 
     // Dynamically generate options for the Club filter
-    function populateClubFilter(column) {
-        const clubs = [...new Set(allData.map(row => row[column]).filter(Boolean))];
+    function populateClubFilter(data, column) {
+        const clubs = [...new Set(data.map(row => row[column]).filter(Boolean))];
         clubs.sort();
 
         const filterClub = document.getElementById('filter-club');
@@ -118,7 +118,9 @@
         filterClub.addEventListener('change', () => {
             const selectedValue = filterClub.value;
             if (!selectedClubs.includes(selectedValue)) {
-                selectedClubs.push(selectedValue);
+                if (selectedValue != 'club') {
+                    selectedClubs.push(selectedValue);
+                }
                 updateFilterStyle();
                 filterTable(4);
                 displayTags();
@@ -127,8 +129,8 @@
     }
 
     // Dynamically generate options for the Tournament filter
-    function populateTournoiFilter(column) {
-        const tournois = [...new Set(allData.map(row => row[column]?.trim()).filter(Boolean))];
+    function populateTournoiFilter(data, column) {
+        const tournois = [...new Set(data.map(row => row[column]?.trim()).filter(Boolean))];
         tournois.sort();
 
         const filterTournoi = document.getElementById('filter-tournoi');
@@ -143,7 +145,9 @@
         filterTournoi.addEventListener('change', () => {
             const selectedValue = filterTournoi.value;
             if (!selectedTournois.includes(selectedValue)) {
-                selectedTournois.push(selectedValue);
+                if (selectedValue != 'tournoi') {
+                    selectedTournois.push(selectedValue);
+                }
                 updateFilterStyle();
                 filterTable(5);
                 displayTags();
@@ -151,8 +155,8 @@
         });
     }
 
-    function populateCommitteeFilter() {
-        const committees = [...new Set(allData.map(row => row[7]))];
+    function populateCommitteeFilter(data) {
+        const committees = [...new Set(data.map(row => row[7]))];
         committees.sort();
 
         const filterCommittee = document.getElementById('filter-committee');
@@ -167,7 +171,9 @@
         filterCommittee.addEventListener('change', () => {
             const selectedValue = filterCommittee.value;
             if (!selectedCommittees.includes(selectedValue)) {
-                selectedCommittees.push(selectedValue);
+                if (selectedValue != 'comite') {
+                    selectedCommittees.push(selectedValue);
+                }
                 updateFilterStyle();
                 filterTable();
                 displayTags();
@@ -175,8 +181,8 @@
         });
     }
 
-    function populateGenderFilter() {
-        const genders = [...new Set(allData.map(row => row[8]))];
+    function populateGenderFilter(data) {
+        const genders = [...new Set(data.map(row => row[8]))];
         genders.sort();
 
         const filterGender = document.getElementById('filter-gender');
@@ -191,7 +197,9 @@
         filterGender.addEventListener('change', () => {
             const selectedValue = filterGender.value;
             if (!selectedGenders.includes(selectedValue)) {
-                selectedGenders.push(selectedValue);
+                if (selectedValue != 'gender') {
+                    selectedGenders.push(selectedValue);
+                }
                 updateFilterStyle();
                 filterTable();
                 displayTags();
@@ -199,8 +207,8 @@
         });
     }
 
-    function populateLevelFilter() {
-        const levels = [...new Set(allData.map(row => row[9]))];
+    function populateLevelFilter(data) {
+        const levels = [...new Set(data.map(row => row[9]))];
         levels.sort();
 
         const filterLevel = document.getElementById('filter-level');
@@ -215,7 +223,9 @@
         filterLevel.addEventListener('change', () => {
             const selectedValue = filterLevel.value;
             if (!selectedLevels.includes(selectedValue)) {
-                selectedLevels.push(selectedValue);
+                if (selectedValue != 'level') {
+                    selectedLevels.push(selectedValue);
+                }
                 updateFilterStyle();
                 filterTable();
                 displayTags();
@@ -417,25 +427,50 @@
 
     function filterTable() {
         let filteredData = allData;
+        let filteredDataClub = allData;
+        let filteredDataTournois = allData;
+        let filteredDataCommittees = allData;
+        let filteredDataGenders = allData;
+        let filteredDataLevels = allData;
 
         if (selectedClubs.length > 0) {
             filteredData = filteredData.filter(row => selectedClubs.includes(row[4]));
+            filteredDataTournois = filteredDataTournois.filter(row => selectedClubs.includes(row[4]));
+            filteredDataCommittees = filteredDataCommittees.filter(row => selectedClubs.includes(row[4]));
+            filteredDataGenders = filteredDataGenders.filter(row => selectedClubs.includes(row[4]));
+            filteredDataLevels = filteredDataLevels.filter(row => selectedClubs.includes(row[4]));
         }
 
         if (selectedTournois.length > 0) {
             filteredData = filteredData.filter(row => selectedTournois.includes(row[5]?.trim()));
+            filteredDataClub = filteredDataClub.filter(row => selectedTournois.includes(row[5]?.trim()));
+            filteredDataCommittees = filteredDataCommittees.filter(row => selectedTournois.includes(row[5]?.trim()));
+            filteredDataGenders = filteredDataGenders.filter(row => selectedTournois.includes(row[5]?.trim()));
+            filteredDataLevels = filteredDataLevels.filter(row => selectedTournois.includes(row[5]?.trim()));
         }
 
         if (selectedCommittees.length > 0) {
             filteredData = filteredData.filter(row => selectedCommittees.includes(String(row[7])));
+            filteredDataClub = filteredDataClub.filter(row => selectedCommittees.includes(String(row[7])));
+            filteredDataTournois = filteredDataTournois.filter(row => selectedCommittees.includes(String(row[7])));
+            filteredDataGenders = filteredDataGenders.filter(row => selectedCommittees.includes(String(row[7])));
+            filteredDataLevels = filteredDataLevels.filter(row => selectedCommittees.includes(String(row[7])));
         }
 
         if (selectedGenders.length > 0) {
             filteredData = filteredData.filter(row => selectedGenders.includes(String(row[8])));
+            filteredDataClub = filteredDataClub.filter(row => selectedGenders.includes(String(row[8])));
+            filteredDataTournois = filteredDataTournois.filter(row => selectedGenders.includes(String(row[8])));
+            filteredDataCommittees = filteredDataCommittees.filter(row => selectedGenders.includes(String(row[8])));
+            filteredDataLevels = filteredDataLevels.filter(row => selectedGenders.includes(String(row[8])));
         }
 
         if (selectedLevels.length > 0) {
             filteredData = filteredData.filter(row => selectedLevels.includes(String(row[9])));
+            filteredDataClub = filteredDataClub.filter(row => selectedLevels.includes(String(row[9])));
+            filteredDataTournois = filteredDataTournois.filter(row => selectedLevels.includes(String(row[9])));
+            filteredDataCommittees = filteredDataCommittees.filter(row => selectedLevels.includes(String(row[9])));
+            filteredDataGenders = filteredDataGenders.filter(row => selectedLevels.includes(String(row[9])));
         }
 
         const minRanking = parseInt(document.getElementById('min-ranking').value) || Math.min(...filteredData.map(row => parseInt(row[3])));
@@ -445,8 +480,33 @@
             const ranking = parseInt(row[3]);
             return ranking >= minRanking && ranking <= maxRanking;
         });
+        filteredDataClub = filteredDataClub.filter(row => {
+            const ranking = parseInt(row[3]);
+            return ranking >= minRanking && ranking <= maxRanking;
+        });
+        filteredDataTournois = filteredDataTournois.filter(row => {
+            const ranking = parseInt(row[3]);
+            return ranking >= minRanking && ranking <= maxRanking;
+        });
+        filteredDataCommittees = filteredDataCommittees.filter(row => {
+            const ranking = parseInt(row[3]);
+            return ranking >= minRanking && ranking <= maxRanking;
+        });
+        filteredDataGenders = filteredDataGenders.filter(row => {
+            const ranking = parseInt(row[3]);
+            return ranking >= minRanking && ranking <= maxRanking;
+        });
+        filteredDataLevels = filteredDataLevels.filter(row => {
+            const ranking = parseInt(row[3]);
+            return ranking >= minRanking && ranking <= maxRanking;
+        });
 
         populateRankingFilter(filteredData);
+        populateClubFilter(filteredDataClub, 4);
+        populateTournoiFilter(filteredDataTournois, 5);
+        populateCommitteeFilter(filteredDataCommittees);
+        populateGenderFilter(filteredDataGenders);
+        populateLevelFilter(filteredDataLevels);
         populateTable(filteredData);
     }
 
@@ -454,7 +514,7 @@
         const tbody = document.getElementById('players-table').querySelector('tbody');
         tbody.innerHTML = '';
         
-        const maxRows = 500;
+        const maxRows = 300;
         const truncated = data.length > maxRows;
         const displayData = truncated ? data.slice(0, maxRows) : data;
 
@@ -473,7 +533,7 @@
         });
 
         if (truncated) {
-            document.getElementById('truncate-message').textContent = "Pour des raisons de performance, seules les 500 premières lignes sont affichées. Utilisez les filtres ou l'option d'exportation.";    
+            document.getElementById('truncate-message').textContent = "Pour des raisons de performance, seules les 300 premières lignes sont affichées. Utilisez les filtres ou l'option d'exportation.";    
         } else {
             document.getElementById('truncate-message').textContent = "";
         }
